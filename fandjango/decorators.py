@@ -27,14 +27,9 @@ def facebook_authorization_required(redirect_uri=False, app_data=''):
 
                 return redirect_to_facebook_authorization(
                         redirect_uri = redirect_uri or page_tab or settings.FACEBOOK_APPLICATION_URL + request.get_full_path()
-                    
+                        )
             return function(*args, **kwargs)
         return wrapper
     return decorator
-
-
-
-
-                                                                                                                                            )   
 
 
