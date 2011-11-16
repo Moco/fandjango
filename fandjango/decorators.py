@@ -23,10 +23,11 @@ def facebook_authorization_required(redirect_uri=False, app_data=''):
             
             page_tab = None
             if not request.facebook or not request.facebook.user:
+                # redirect to app page_tab and use app_data
                 page_tab = request.facebook.page.url + "?sk=app_%s&app_data=%s" % (settings.FACEBOOK_APPLICATION_ID, request.get_full_path())
 
                 return redirect_to_facebook_authorization(
-                        redirect_uri = redirect_uri or page_tab or settings.FACEBOOK_APPLICATION_URL + request.get_full_path()
+                        redirect_uri = redirect_uri or page_tab or settings.FACEBOOK_APPLICATION_URL + request.get_full_path(),
                         )
             return function(*args, **kwargs)
         return wrapper
