@@ -1,6 +1,8 @@
+import time
+import json
+
 from datetime import datetime
 from urllib import urlencode
-import time
 
 from django.conf import settings
 from django.http import QueryDict
@@ -58,7 +60,10 @@ class FacebookMiddleware():
 
             request.facebook.app_data = None
             if 'app_data' in facebook_data:
-                request.facebook.app_data = facebook_data['app_data']
+                try:
+                    request.facebook.app_data = json.loads(facebook_data['app_data'])
+                except ValueError, ve:
+                    request.facebook.app_data = facebook_data['app_data']
 
 
             # User has authorized the application...
