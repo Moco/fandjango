@@ -42,7 +42,7 @@ def redirect_to_facebook_authorization(redirect_uri, delete_cookie=False):
         
             <head>
                 <script type="text/javascript">
-                    window.parent.location = "https://graph.facebook.com/oauth/authorize?%s";
+                    window.parent.location = "https://www.facebook.com/dialog/oauth?%s";
                 </script>
             </head>
             
