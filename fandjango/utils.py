@@ -4,7 +4,7 @@ import base64
 import re
 import hmac
 import hashlib
-from httplib import HTTPSConnection
+import requests
 from fandjango.settings import FACEBOOK_APPLICATION_SECRET_KEY
 import time
 
@@ -166,10 +166,10 @@ def get_facebook_profile(oauth_token):
     Arguments:
     oauth_token -- A string describing the user's OAuth token.
     """
-    connection = HTTPSConnection('graph.facebook.com')
-    connection.request('GET', 'me?access_token=%s' % oauth_token)
-    
-    return json.loads(connection.getresponse().read())
+
+    r = requests.get( 'https://graph.facebook.com/me', params={'access_token':oauth_token} )
+    response = r.content
+    return json.loads(response)
     
 def is_disabled_path(path):
     """
