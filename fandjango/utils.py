@@ -179,6 +179,8 @@ def is_disabled_path(path):
     Arguments:
     path -- A string describing the path to be matched.
     """
+    if path == '/':
+        return True
     for disabled_path in DISABLED_PATHS:
         match = re.search(disabled_path, path[1:])
         if match:
