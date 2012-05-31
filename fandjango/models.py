@@ -177,3 +177,12 @@ class OAuthToken(models.Model):
     class Meta:
         verbose_name = 'OAuth token'
         verbose_name_plural = 'OAuth tokens'
+
+    def save(self, *args, **kwargs):
+        # TODO: before we save, delete expired tokens
+
+        #OAuthToken.objects.filter(expires__gt < datetime.now()).delete()
+
+        super(OAuthToken, self).save(*args, **kwargs)
+        
+
