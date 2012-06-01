@@ -181,7 +181,7 @@ class OAuthToken(models.Model):
     def save(self, *args, **kwargs):
         # TODO: before we save, delete expired tokens
 
-        OAuthToken.objects.filter(expires__gt=datetime.now()).delete()
+        OAuthToken.objects.filter(expires_at__gt=datetime.now()).delete()
 
         super(OAuthToken, self).save(*args, **kwargs)
         
