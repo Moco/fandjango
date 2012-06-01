@@ -1,5 +1,6 @@
 from httplib import HTTPConnection
 from datetime import datetime
+from datetime import timedelta
 
 from django.db import models
 
@@ -181,7 +182,7 @@ class OAuthToken(models.Model):
     def save(self, *args, **kwargs):
 
         # delete old expired tokens, no point keeping them around
-        now = datetime.now()
+        now = datetime.now() - timedelta(days=1)
         OAuthToken.objects.filter(expires_at__lt=now).delete()
 
         super(OAuthToken, self).save(*args, **kwargs)
