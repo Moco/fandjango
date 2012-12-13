@@ -138,19 +138,28 @@ class FacebookMiddleware():
                 else:
                     user.last_seen_at = datetime.now()
                     user.authorized = True
-                    if facebook_data.has_key('oauth_token'):
+                    if 'oauth_token' in facebook_data:
                         user.oauth_token.token = facebook_data['oauth_token']
                         user.oauth_token.issued_at = datetime.fromtimestamp(facebook_data['issued_at'])
                         user.oauth_token.expires_at = datetime.fromtimestamp(facebook_data.get('expires')) if facebook_data.get('expires') else None
                         user.oauth_token.save()
                     user.save()
 
+                if not user.oauth_token.extended:
+                    # Attempt to extend the OAuth token, but ignore exceptions raised by
+                    # bug #102727766518358 in the Facebook Platform.
+                    #
+                    # http://developers.facebook.com/bugs/102727766518358/
+                    try:
+                        user.oauth_token.extend()
+                    except:
+                        pass
+
                 request.facebook.user = user
 
         # ... no signed request found.
         else:
             request.facebook = False
-
 
     def process_response(self, request, response):
         """

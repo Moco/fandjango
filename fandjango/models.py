@@ -2,45 +2,54 @@ from httplib import HTTPConnection
 from datetime import datetime
 from datetime import timedelta
 
+from urlparse import parse_qs
+
 from django.db import models
 
 from utils import get_facebook_profile
+
+from facepy import GraphAPI
+
+from fandjango.settings import FACEBOOK_APPLICATION_ID, FACEBOOK_APPLICATION_SECRET_KEY
+
 
 class Facebook:
     """
     Facebook instances hold information on the current user and
     the page he/she is accessing the application from, as well as
     the signed request that information is derived from.
-    
+
     Properties:
     user -- A User instance.
     page -- A FacebookPage instance.
     signed_request -- A string describing the raw signed request.
     """
-    
+
     user, page, signed_request = [None] * 3
+
 
 class FacebookPage:
     """
     FacebookPage instances represent Facebook Pages.
-    
+
     Properties:
     id -- An integer describing the id of the page.
     is_admin -- A boolean describing whether or not the current user is an administrator of the page.
     is_liked -- A boolean describing whether or not the current user likes the page.
     url -- A string describing the URL to the page.
     """
-    
+
     def __init__(self, id, is_admin, is_liked):
         self.id = id
         self.is_admin = is_admin
         self.is_liked = is_liked
         self.url = 'http://facebook.com/pages/-/%s' % self.id
 
+
 class User(models.Model):
     """
     Instances of the User class represent Facebook users who have authorized the application.
-    
+
     Properties:
     facebook_id -- An integer describing the user's Facebook ID.
     first_name -- A string describing the user's first name.
@@ -65,7 +74,7 @@ class User(models.Model):
     timezone - Integer timezone representation, i.e. "GMT+2" would be just 2
     quotes - Multiline string with favorite quotes
     """
-    
+
     facebook_id = models.BigIntegerField()
     facebook_username = models.CharField(max_length=255, blank=True, null=True)
     first_name = models.CharField(max_length=255, blank=True, null=True)
@@ -89,7 +98,7 @@ class User(models.Model):
     last_seen_at = models.DateTimeField(auto_now_add=True)
     timezone = models.IntegerField(blank=True, null=True)
     quotes = models.TextField(blank=True, null=True)
-    
+
     @property
     def full_name(self):
         if self.first_name and self.middle_name and self.last_name:
@@ -103,14 +112,14 @@ class User(models.Model):
         connection.request('GET', '/%s/picture' % self.facebook_id)
         response = connection.getresponse()
         return response.getheader('Location')
-        
+
     def synchronize(self):
         """Synchronize the user with Facebook's Graph API."""
         if self.oauth_token.expired:
             raise ValueError('Signed request expired.')
-        
+
         profile = get_facebook_profile(self.oauth_token.token)
-        
+
         self.facebook_id = profile.get('id')
         self.facebook_username = profile.get('username')
         self.first_name = profile.get('first_name')
@@ -130,9 +139,9 @@ class User(models.Model):
         self.birthday = datetime.strptime(profile['birthday'], '%m/%d/%Y') if profile.has_key('birthday') else None
         self.timezone = profile.get('timezone', None)
         self.quotes = profile.get('quotes', None)
-        
+
         self.save()
-    
+
     @property
     def graph(self):
         """Return a GraphAPI instance with the user's access token."""
@@ -141,15 +150,15 @@ class User(models.Model):
             return GraphAPI(self.oauth_token.token)
         except ImportError:
             pass
-            
+
         try:
             from facebook import GraphAPI
             return GraphAPI(self.oauth_token.token)
         except ImportError:
             pass
-        
+
         raise ImportError('Neither Facepy nor Facebook-SDK could be imported')
-        
+
     def __unicode__(self):
         if self.full_name:
             return u'%s' % self.full_name
@@ -158,15 +167,18 @@ class User(models.Model):
         else:
             return u'%s' % self.facebook_id
 
+
 class OAuthToken(models.Model):
     """
-    Instances of the OAuthToken class are credentials used to query the Facebook API on behalf of a user.
-    
+    Instances of the OAuthToken class are credentials used to query the
+    Facebook API on behalf of a user.
+
     token -- A string describing the OAuth token itself.
     issued_at -- A datetime object describing when the token was issued.
-    expires_at -- A datetime object describing when the token expires (or None if it doesn't)
+    expires_at -- A datetime object describing when the token
+        expires (or None if it doesn't)
     """
-    
+
     token = models.CharField(max_length=255)
     issued_at = models.DateTimeField()
     expires_at = models.DateTimeField(null=True, blank=True)
@@ -174,7 +186,33 @@ class OAuthToken(models.Model):
     @property
     def expired(self):
         return self.expires_at < datetime.now() if self.expires_at else False
-        
+
+    @property
+    def extended(self):
+        """Determine whether the OAuth token has been extended."""
+        if self.expires_at:
+            return self.expires_at - self.issued_at > timedelta(days=30)
+        return False
+
+    def extend(self):
+        """Extend the OAuth token."""
+        graph = GraphAPI()
+
+        response = graph.get('oauth/access_token',
+            client_id=FACEBOOK_APPLICATION_ID,
+            client_secret=FACEBOOK_APPLICATION_SECRET_KEY,
+            grant_type='fb_exchange_token',
+            fb_exchange_token=self.token
+        )
+
+        components = parse_qs(response)
+
+        self.token = components['access_token'][0]
+        self.expires_at = datetime.now() + \
+            timedelta(seconds=int(components['expires'][0]))
+
+        self.save()
+
     class Meta:
         verbose_name = 'OAuth token'
         verbose_name_plural = 'OAuth tokens'
