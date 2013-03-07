@@ -46,6 +46,8 @@ class FacebookPage:
         self.url = 'http://facebook.com/pages/-/%s' % self.id
 
 
+
+
 class User(models.Model):
     """
     Instances of the User class represent Facebook users who have authorized the application.
@@ -98,6 +100,7 @@ class User(models.Model):
     last_seen_at = models.DateTimeField(auto_now_add=True)
     timezone = models.IntegerField(blank=True, null=True)
     quotes = models.TextField(blank=True, null=True)
+
 
     @property
     def full_name(self):
@@ -216,3 +219,27 @@ class OAuthToken(models.Model):
     class Meta:
         verbose_name = 'OAuth token'
         verbose_name_plural = 'OAuth tokens'
+
+
+class Friend(models.Model):
+    ''' Model for storing a users friends '''
+
+    name = models.TextField(blank=True, null=True)
+    facebook_id = models.BigIntegerField()
+
+    friend_of = models.ForeignKey(User, related_name='friends')
+
+    def __unicode__(self):
+        return name
+
+
+class Like(models.Model):
+    '''
+    Model for storing all of a users fb likes
+    '''
+    name = models.TextField(blank=True, null=True)
+    category = models.TextField(blank=True, null=True)
+    user = models.ForeignKey(User, related_name='likes')
+
+    def __unicode__(self):
+        return name
