@@ -230,16 +230,18 @@ class Friend(models.Model):
     friend_of = models.ForeignKey(User, related_name='friends')
 
     def __unicode__(self):
-        return name
+        return self.name
 
 
 class Like(models.Model):
     '''
     Model for storing all of a users fb likes
     '''
+
     name = models.TextField(blank=True, null=True)
     category = models.TextField(blank=True, null=True)
-    user = models.ForeignKey(User, related_name='likes')
+    facebook_user = models.ForeignKey(User, related_name='likes')
+    like_id = models.BigIntegerField()
 
     def __unicode__(self):
-        return name
+        return self.name
